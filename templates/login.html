@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Login{% endblock %}
+
+{% block content %}
+<section class="block" style="padding-top:40px;">
+  <div class="wrap narrow">
+    <div class="block-head"><h2>Admin Login</h2></div>
+    <div style="background:var(--paper-dim);padding:40px;border-radius:8px;max-width:400px;margin:0 auto;">
+      {% if error %}
+        <div style="background:var(--red);color:#fff;padding:12px;border-radius:4px;margin-bottom:20px;text-align:center;">
+          {{ error }}
+        </div>
+      {% endif %}
+      <form method="post">
+        <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:1px;margin-bottom:6px;">Username</label>
+        <input type="text" name="username" required autofocus style="width:100%;padding:12px;border:1px solid var(--ink-soft);border-radius:4px;font-size:16px;margin-bottom:16px;" />
+        <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:1px;margin-bottom:6px;">Password</label>
+        <input type="password" name="password" required style="width:100%;padding:12px;border:1px solid var(--ink-soft);border-radius:4px;font-size:16px;margin-bottom:24px;" />
+        <button type="submit" class="btn primary" style="width:100%;">Log In</button>
+      </form>
+      <p style="text-align:center;margin-top:16px;font-size:13px;color:var(--ink-soft);">
+        Default: <strong>admin</strong> / <strong>password123</strong>
+      </p>
+    </div>
+  </div>
+</section>
+{% endblock %}

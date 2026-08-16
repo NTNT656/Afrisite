@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}African Frame — Movies. Series. Every Angle.{% endblock %}
+
+{% block content %}
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <div class="eyebrow">Flagship Review</div>
+      <h1 class="disp hero-title">The Verdict<br>On The Frame</h1>
+      <p class="hero-dek">Our long-form take on the film everyone's arguing about this week — where it earns its praise, where it stalls, and whether it's worth the ticket.</p>
+      <div class="cta-row">
+        <a class="btn primary" href="#">Read The Review</a>
+        <a class="btn ghost" href="#">Watch The Breakdown</a>
+      </div>
+    </div>
+    <div class="hero-media">
+      <div class="poster p-drama" style="position:absolute;inset:0;">
+        <div class="shape"></div>
+        <div class="figure fig-duo">
+          <svg viewBox="0 0 100 140" preserveAspectRatio="xMidYMax meet" fill="#0A0806"><circle cx="50" cy="30" r="22"/><path d="M50 55 C20 55 6 82 6 140 L94 140 C94 82 80 55 50 55 Z"/></svg>
+          <svg viewBox="0 0 100 140" preserveAspectRatio="xMidYMax meet" fill="#0A0806" style="opacity:.7"><circle cx="50" cy="30" r="20"/><path d="M50 53 C24 53 12 80 12 140 L88 140 C88 80 76 53 50 53 Z"/></svg>
+        </div>
+        <div class="grain"></div><div class="vig"></div>
+      </div>
+      <div class="frame-count" style="z-index:2;">FRAME 001 / REEL A</div>
+      <div class="score" style="z-index:2;">8.4<small>African Frame Score</small></div>
+    </div>
+  </div>
+</section>
+
+<div class="notch-row"><div class="notch"></div><div class="fill"></div></div>
+
+<!-- ============ LATEST NEWS (List Format - No Images) ============ -->
+<section class="block">
+  <div class="wrap">
+    <div class="block-head">
+      <h2>Latest News</h2>
+      <a class="see-all mono" href="{{ url_for('news_page') }}">All News →</a>
+    </div>
+    <div class="list">
+      {% if news_articles and news_articles is iterable and news_articles|length > 0 %}
+        {% for article in news_articles %}
+          <div class="list-row">
+            <div>
+              <span class="tag mono">{{ article.source|replace('www.','')|replace('.com','')|replace('.org','')|truncate(20) if article.source else 'News' }}</span>
+              <h3><a href="{{ article.url }}" target="_blank" style="color:var(--red);">{{ article.title }}</a></h3>
+            </div>
+            <span class="meta">{{ article.published_at|string|truncate(10) if article.published_at else 'Just now' }}</span>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p style="color:var(--ink-soft);text-align:center;padding:20px 0;">No news available at the moment. Please check back later.</p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<!-- ============ LATEST REVIEWS (Grid with Posters) ============ -->
+<section class="block dim">
+  <div class="wrap">
+    <div class="block-head">
+      <h2>Latest Reviews</h2>
+      <a class="see-all mono" href="{{ url_for('reviews_page') }}">All Reviews →</a>
+    </div>
+    <div class="grid cols-4">
+      {% for item in reviews %}
+        <div class="card">
+          <div class="thumb">
+            <div class="poster p-drama">
+              <div class="shape"></div>
+              <div class="figure fig-duo">
+                <svg viewBox="0 0 100 140" preserveAspectRatio="xMidYMax meet" fill="#0A0806"><circle cx="50" cy="30" r="22"/><path d="M50 55 C20 55 6 82 6 140 L94 140 C94 82 80 55 50 55 Z"/></svg>
+                <svg viewBox="0 0 100 140" preserveAspectRatio="xMidYMax meet" fill="#0A0806" style="opacity:.7"><circle cx="50" cy="30" r="20"/><path d="M50 53 C24 53 12 80 12 140 L88 140 C88 80 76 53 50 53 Z"/></svg>
+              </div>
+              <div class="grain"></div><div class="vig"></div>
+              <div class="cap"><span class="genre">{{ item.tag }}</span><span class="t1">{{ item.title }}</span></div>
+            </div>
+            <div class="score-badge">{{ item.score }}</div>
+          </div>
+          <div class="meta">
+            <div class="kicker mono">{{ item.tag }}</div>
+            <h3>{{ item.title }}</h3>
+            <p>{{ item.blurb }}</p>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<div class="notch-row red"><div class="notch"></div><div class="fill"></div></div>
+
+<!-- ============ SHOWS ============ -->
+<section class="block dark">
+  <div class="wrap">
+    <div class="block-head"><h2>Shows</h2><a class="see-all mono" href="{{ url_for('shows') }}">All Shows →</a></div>
+  </div>
+  <div class="shows-grid">
+    <div class="show-panel">
+      <div class="show-eyebrow mono">Flagship</div>
+      <h3>African Frame</h3>
+      <p>In-depth movie reviews, breakdowns, and analysis.</p>
+      <a class="btn ghost" href="https://youtube.com/@africanframefilmchannel?si=B2IeY26ZuPtzO43z" target="_blank">▶ Watch</a>
+    </div>
+    <div class="show-panel red">
+      <div class="show-eyebrow mono">Series Coverage</div>
+      <h3>Series Nton Nton</h3>
+      <p>Episode-by-episode breakdowns and season verdicts.</p>
+      <a class="btn ghost" href="#" target="_blank">▶ Watch</a>
+    </div>
+  </div>
+  <div class="wrap" style="margin-top:2px;">
+    <div class="shows-grid" style="grid-template-columns:1fr 1fr;">
+      <div class="show-panel" style="background:var(--red-deep);">
+        <div class="show-eyebrow mono">Box Office Desk</div>
+        <h3>Cinema SodZA</h3>
+        <p>Box office news, trailer reactions, and industry buzz.</p>
+        <a class="btn ghost" href="https://youtube.com/@cinemasoda_sa?si=jHRrTdX5SRLQojHi" target="_blank">▶ Watch</a>
+      </div>
+      <div class="show-panel" style="background:#1A1512;">
+        <div class="show-eyebrow mono">Short Reviews</div>
+        <h3>African Frame Plus</h3>
+        <p>Short reviews with other content creators.</p>
+        <a class="btn ghost" href="https://youtube.com/@africanframeplus?si=ZprQM5XAEaucO4P5" target="_blank">▶ Watch</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel{% endblock %}
+
+{% block extra_head %}
+  <!-- We'll use the existing admin.css from static? We can copy it inline or link it -->
+  <style>
+    /* Minimal admin styles (same as before, but we'll keep it lean) */
+    .admin-tabs { display: flex; gap: 4px; margin-top: 20px; border-bottom: 2px solid var(--ink); }
+    .admin-tab { font-family: 'Oswald', sans-serif; text-transform: uppercase; font-size: 14px; letter-spacing: 0.03em; background: none; border: none; padding: 10px 18px; cursor: pointer; color: var(--ink-60); }
+    .admin-tab.active { color: var(--ink); background: var(--cream-dark); }
+    .admin-panel { padding-top: 28px; }
+    .admin-panel.hidden { display: none; }
+    .admin-panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .admin-panel-head h2 { font-family: 'Oswald', sans-serif; text-transform: uppercase; font-size: 20px; }
+    .btn-small { padding: 8px 16px; font-size: 12px; }
+    .btn-red { background: var(--red); color: #fff; border: none; cursor: pointer; }
+    .btn-red:hover { background: var(--red-deep); }
+    .btn-outline-dark { background: transparent; border: 1px solid var(--ink-10); border-color: rgba(11,11,12,0.25); color: var(--ink); font-family: 'Oswald', sans-serif; text-transform: uppercase; font-size: 13px; padding: 10px 18px; cursor: pointer; }
+    .btn-outline-dark:hover { border-color: var(--ink); }
+    .admin-table { display: flex; flex-direction: column; border: 1px solid var(--ink-10); background: #fff; }
+    .admin-row { display: flex; align-items: center; gap: 16px; padding: 14px 16px; border-bottom: 1px solid var(--ink-10); flex-wrap: wrap; }
+    .admin-row:last-child { border-bottom: none; }
+    .admin-row-main { flex: 1; min-width: 220px; }
+    .admin-row-tag { color: var(--red); font-family: 'Oswald', sans-serif; text-transform: uppercase; font-size: 11px; letter-spacing: 0.03em; }
+    .admin-row-title { font-family: 'Oswald', sans-serif; font-size: 16px; margin-top: 2px; }
+    .admin-row-meta { font-size: 13px; color: var(--ink-45); }
+    .admin-row-actions { display: flex; gap: 8px; }
+    .admin-row-actions button { font-family: 'Inter', sans-serif; font-size: 13px; background: none; border: none; cursor: pointer; padding: 6px 10px; color: var(--ink-60); }
+    .admin-row-actions button:hover { color: var(--ink); text-decoration: underline; }
+    .admin-row-actions .delete-btn:hover { color: var(--red); }
+    .admin-empty { padding: 24px 16px; color: var(--ink-45); font-size: 14px; }
+    .admin-reset { margin-top: 40px; }
+    .admin-reset-btn { background: none; border: none; color: var(--ink-45); font-size: 13px; text-decoration: underline; cursor: pointer; }
+    .admin-reset-btn:hover { color: var(--red); }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(11,11,12,0.55); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100; }
+    .modal-overlay.hidden { display: none; }
+    .modal { background: var(--paper); width: 100%; max-width: 460px; padding: 28px; max-height: 90vh; overflow-y: auto; }
+    .modal h3 { font-family: 'Oswald', sans-serif; text-transform: uppercase; font-size: 20px; margin-bottom: 18px; }
+    .modal label { display: block; font-family: 'Oswald', sans-serif; text-transform: uppercase; font-size: 12px; letter-spacing: 0.03em; color: var(--ink-60); margin: 14px 0 6px; }
+    .modal input[type="text"], .modal textarea { width: 100%; border: 1px solid rgba(11,11,12,0.2); background: #fff; padding: 10px 12px; font-family: 'Inter', sans-serif; font-size: 14px; color: var(--ink); resize: vertical; }
+    .modal input:focus, .modal textarea:focus { outline: 2px solid var(--red); outline-offset: 1px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="wrap">
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 0;">
+    <h1 style="font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:32px;letter-spacing:-0.01em;">Admin</h1>
+    <a href="{{ url_for('logout') }}" class="btn btn-outline-dark" style="font-size:13px;">Logout</a>
+  </div>
+  <p style="color:var(--ink-60);margin-top:-8px;max-width:560px;line-height:1.5;">Edit the News, Reviews, and Architecture articles. Changes save to the JSON file and appear on the site immediately.</p>
+
+  <div class="admin-tabs">
+    <button class="admin-tab active" data-tab="news">News</button>
+    <button class="admin-tab" data-tab="reviews">Reviews</button>
+    <button class="admin-tab" data-tab="architecture">Architecture</button>
+  </div>
+
+  <!-- NEWS TAB -->
+  <section id="tab-news" class="admin-panel">
+    <div class="admin-panel-head">
+      <h2>News Articles</h2>
+      <button class="btn btn-red btn-small" id="addNewsBtn">+ Add Article</button>
+    </div>
+    <div class="admin-table" id="newsTable"></div>
+  </section>
+
+  <!-- REVIEWS TAB -->
+  <section id="tab-reviews" class="admin-panel hidden">
+    <div class="admin-panel-head">
+      <h2>Reviews</h2>
+      <button class="btn btn-red btn-small" id="addReviewBtn">+ Add Review</button>
+    </div>
+    <div class="admin-table" id="reviewsTable"></div>
+  </section>
+
+  <!-- ARCHITECTURE TAB -->
+  <section id="tab-architecture" class="admin-panel hidden">
+    <div class="admin-panel-head">
+      <h2>Architecture Articles</h2>
+      <button class="btn btn-red btn-small" id="addArchitectureBtn">+ Add Architecture</button>
+    </div>
+    <div class="admin-table" id="architectureTable"></div>
+  </section>
+
+  <div class="admin-reset">
+    <button class="admin-reset-btn" id="resetBtn">Reset all content to defaults</button>
+  </div>
+</div>
+
+<!-- ===== Article Form Modal ===== -->
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal">
+    <h3 id="modalTitle">Add Article</h3>
+    <form id="articleForm">
+      <input type="hidden" id="fieldId" />
+      <input type="hidden" id="fieldType" />
+
+      <label>Category / Tag</label>
+      <input type="text" id="fieldTag" required placeholder="e.g. Industry, Drama, Design" />
+
+      <label>Title</label>
+      <input type="text" id="fieldTitle" required placeholder="Article headline" />
+
+      <div id="metaFields">
+        <label>Meta (time · read length)</label>
+        <input type="text" id="fieldMeta" placeholder="e.g. 2 hrs ago · 4 min read" />
+      </div>
+
+      <div id="reviewOnlyFields" class="hidden">
+        <label>Blurb</label>
+        <textarea id="fieldBlurb" rows="3" placeholder="One-line take on the film"></textarea>
+        <label>Score (out of 10)</label>
+        <input type="text" id="fieldScore" placeholder="e.g. 8.4" />
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-outline-dark" id="cancelBtn">Cancel</button>
+        <button type="submit" class="btn btn-red">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Admin logic – fetch data from /api/data, send updates via POST
+  // Same as the earlier admin.js but adapted to use API endpoints
+  let content = {};
+  let activeTab = "news";
+
+  const els = {
+    tabs: document.querySelectorAll(".admin-tab"),
+    panels: {
+      news: document.getElementById("tab-news"),
+      reviews: document.getElementById("tab-reviews"),
+      architecture: document.getElementById("tab-architecture"),
+    },
+    newsTable: document.getElementById("newsTable"),
+    reviewsTable: document.getElementById("reviewsTable"),
+    architectureTable: document.getElementById("architectureTable"),
+    addNewsBtn: document.getElementById("addNewsBtn"),
+    addReviewBtn: document.getElementById("addReviewBtn"),
+    addArchitectureBtn: document.getElementById("addArchitectureBtn"),
+    resetBtn: document.getElementById("resetBtn"),
+    modalOverlay: document.getElementById("modalOverlay"),
+    modalTitle: document.getElementById("modalTitle"),
+    form: document.getElementById("articleForm"),
+    fieldId: document.getElementById("fieldId"),
+    fieldType: document.getElementById("fieldType"),
+    fieldTag: document.getElementById("fieldTag"),
+    fieldTitle: document.getElementById("fieldTitle"),
+    fieldMeta: document.getElementById("fieldMeta"),
+    fieldBlurb: document.getElementById("fieldBlurb"),
+    fieldScore: document.getElementById("fieldScore"),
+    metaFields: document.getElementById("metaFields"),
+    reviewOnlyFields: document.getElementById("reviewOnlyFields"),
+    cancelBtn: document.getElementById("cancelBtn"),
+  };
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str ?? "";
+    return div.innerHTML;
+  }
+
+  function loadData() {
+    fetch('/api/data')
+      .then(res => res.json())
+      .then(data => {
+        content = data;
+        renderAll();
+      });
+  }
+
+  function renderNewsTable() {
+    if (content.news && content.news.length === 0) {
+      els.newsTable.innerHTML = `<div class="admin-empty">No news articles yet. Click "Add Article" to create one.</div>`;
+      return;
+    }
+    els.newsTable.innerHTML = content.news.map(n => `
+      <div class="admin-row">
+        <div class="admin-row-main">
+          <div class="admin-row-tag">${escapeHtml(n.tag)}</div>
+          <div class="admin-row-title">${escapeHtml(n.title)}</div>
+          <div class="admin-row-meta">${escapeHtml(n.meta)}</div>
+        </div>
+        <div class="admin-row-actions">
+          <button class="edit-btn" data-type="news" data-id="${n.id}">Edit</button>
+          <button class="delete-btn" data-type="news" data-id="${n.id}">Delete</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  function renderReviewsTable() {
+    if (content.reviews && content.reviews.length === 0) {
+      els.reviewsTable.innerHTML = `<div class="admin-empty">No reviews yet. Click "Add Review" to create one.</div>`;
+      return;
+    }
+    els.reviewsTable.innerHTML = content.reviews.map(r => `
+      <div class="admin-row">
+        <div class="admin-row-main">
+          <div class="admin-row-tag">${escapeHtml(r.tag)} · Score ${escapeHtml(r.score)}</div>
+          <div class="admin-row-title">${escapeHtml(r.title)}</div>
+          <div class="admin-row-meta">${escapeHtml(r.blurb)}</div>
+        </div>
+        <div class="admin-row-actions">
+          <button class="edit-btn" data-type="reviews" data-id="${r.id}">Edit</button>
+          <button class="delete-btn" data-type="reviews" data-id="${r.id}">Delete</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  function renderArchitectureTable() {
+    if (content.architecture && content.architecture.length === 0) {
+      els.architectureTable.innerHTML = `<div class="admin-empty">No architecture articles yet. Click "Add Architecture" to create one.</div>`;
+      return;
+    }
+    els.architectureTable.innerHTML = content.architecture.map(a => `
+      <div class="admin-row">
+        <div class="admin-row-main">
+          <div class="admin-row-tag">${escapeHtml(a.tag)}</div>
+          <div class="admin-row-title">${escapeHtml(a.title)}</div>
+          <div class="admin-row-meta">${escapeHtml(a.meta)}</div>
+        </div>
+        <div class="admin-row-actions">
+          <button class="edit-btn" data-type="architecture" data-id="${a.id}">Edit</button>
+          <button class="delete-btn" data-type="architecture" data-id="${a.id}">Delete</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  function renderAll() {
+    renderNewsTable();
+    renderReviewsTable();
+    renderArchitectureTable();
+  }
+
+  // Tabs
+  els.tabs.forEach(tab => {
+    tab.addEventListener("click", () => {
+      activeTab = tab.dataset.tab;
+      els.tabs.forEach(t => t.classList.toggle("active", t === tab));
+      els.panels.news.classList.toggle("hidden", activeTab !== "news");
+      els.panels.reviews.classList.toggle("hidden", activeTab !== "reviews");
+      els.panels.architecture.classList.toggle("hidden", activeTab !== "architecture");
+    });
+  });
+
+  // Modal
+  function openModal(type, article) {
+    els.fieldType.value = type;
+    els.fieldId.value = article ? article.id : "";
+    const typeLabel = type === "news" ? "Article" : type === "reviews" ? "Review" : "Architecture";
+    els.modalTitle.textContent = article ? `Edit ${typeLabel}` : `Add ${typeLabel}`;
+    els.fieldTag.value = article ? article.tag : "";
+    els.fieldTitle.value = article ? article.title : "";
+    els.fieldMeta.value = article && (type === "news" || type === "architecture") ? article.meta : "";
+    els.fieldBlurb.value = article && type === "reviews" ? article.blurb : "";
+    els.fieldScore.value = article && type === "reviews" ? article.score : "";
+    els.metaFields.classList.toggle("hidden", type === "reviews");
+    els.reviewOnlyFields.classList.toggle("hidden", type !== "reviews");
+    els.modalOverlay.classList.remove("hidden");
+    els.fieldTag.focus();
+  }
+
+  function closeModal() {
+    els.modalOverlay.classList.add("hidden");
+    els.form.reset();
+  }
+
+  els.addNewsBtn.addEventListener("click", () => openModal("news", null));
+  els.addReviewBtn.addEventListener("click", () => openModal("reviews", null));
+  els.addArchitectureBtn.addEventListener("click", () => openModal("architecture", null));
+  els.cancelBtn.addEventListener("click", closeModal);
+  els.modalOverlay.addEventListener("click", (e) => {
+    if (e.target === els.modalOverlay) closeModal();
+  });
+
+  // Edit / Delete (event delegation)
+  document.addEventListener("click", (e) => {
+    const editBtn = e.target.closest(".edit-btn");
+    const deleteBtn = e.target.closest(".delete-btn");
+
+    if (editBtn) {
+      const { type, id } = editBtn.dataset;
+      const article = content[type].find(a => a.id === id);
+      if (article) openModal(type, article);
+    }
+
+    if (deleteBtn) {
+      const { type, id } = deleteBtn.dataset;
+      const article = content[type].find(a => a.id === id);
+      if (!article) return;
+      if (!confirm(`Delete "${article.title}"? This can't be undone.`)) return;
+      content[type] = content[type].filter(a => a.id !== id);
+      saveData(type, content[type]);
+    }
+  });
+
+  // Save form
+  els.form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const type = els.fieldType.value;
+    const id = els.fieldId.value;
+    const tag = els.fieldTag.value.trim();
+    const title = els.fieldTitle.value.trim();
+    if (!tag || !title) return;
+
+    if (type === "news" || type === "architecture") {
+      const meta = els.fieldMeta.value.trim() || "Just now";
+      if (id) {
+        const article = content[type].find(a => a.id === id);
+        Object.assign(article, { tag, title, meta });
+      } else {
+        const prefix = type === "news" ? "n" : "a";
+        content[type].unshift({ id: prefix + "_" + Date.now().toString(36) + Math.random().toString(36).slice(2,6), tag, title, meta });
+      }
+    } else if (type === "reviews") {
+      const blurb = els.fieldBlurb.value.trim();
+      const score = els.fieldScore.value.trim() || "—";
+      if (id) {
+        const article = content.reviews.find(a => a.id === id);
+        Object.assign(article, { tag, title, blurb, score });
+      } else {
+        content.reviews.unshift({ id: "r_" + Date.now().toString(36) + Math.random().toString(36).slice(2,6), tag, title, blurb, score });
+      }
+    }
+    saveData(type, content[type]);
+    closeModal();
+  });
+
+  // Reset
+  els.resetBtn.addEventListener("click", () => {
+    if (!confirm("Reset all content to defaults? This can't be undone.")) return;
+    fetch('/api/reset', { method: 'POST' })
+      .then(() => loadData());
+  });
+
+  // Helper to save a specific type
+  function saveData(type, data) {
+    const endpoint = `/api/${type}`;
+    fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    }).then(() => loadData());
+  }
+
+  // Initial load
+  loadData();
+</script>
+{% endblock %}

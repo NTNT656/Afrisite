@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} — African Frame{% endblock %}
+
+{% block content %}
+<section class="block" style="padding-top:40px;">
+  <div class="wrap">
+    <div class="block-head"><h2>{{ title }}</h2></div>
+
+    <!-- ============================================================ -->
+    <!-- BOX OFFICE (Now Playing)                                     -->
+    <!-- ============================================================ -->
+    {% if is_boxoffice %}
+      <div style="margin-bottom:30px;">
+        <form method="get" action="{{ url_for('boxoffice') }}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <input type="text" name="q" placeholder="Search for a movie..." value="{{ query }}" style="flex:1;min-width:200px;padding:12px 16px;border:2px solid var(--ink-soft);border-radius:4px;font-size:16px;background:#fff;" />
+          <button type="submit" class="btn primary">Search</button>
+          {% if query %}
+            <a href="{{ url_for('boxoffice') }}" class="btn ghost">Clear</a>
+          {% endif %}
+        </form>
+      </div>
+
+      {% if results %}
+        <p style="color:var(--ink-soft);margin-bottom:16px;">
+          {% if query %}
+            Found {{ results|length }} results for "{{ query }}"
+          {% else %}
+            Currently showing in theaters
+          {% endif %}
+        </p>
+        <div class="grid cols-4">
+          {% for movie in results %}
+            <div class="card">
+              <div class="thumb" style="aspect-ratio:2/3;">
+                {% if movie.image_url %}
+                  <img src="{{ movie.image_url }}" alt="{{ movie.title }}" style="width:100%;height:100%;object-fit:cover;" />
+                {% else %}
+                  <div style="width:100%;height:100%;background:var(--ink-soft);display:flex;align-items:center;justify-content:center;color:var(--paper);font-family:'Anton',sans-serif;font-size:16px;text-align:center;padding:10px;">
+                    No Image
+                  </div>
+                {% endif %}
+              </div>
+              <div class="meta">
+                <div class="kicker mono">Now Playing</div>
+                <h3><a href="/tmdb/movie/{{ movie.id }}" style="color:var(--red);">{{ movie.title }}</a></h3>
+                <p style="font-size:12px;color:var(--ink-soft);">
+                  {{ movie.release_date or 'N/A' }} · ⭐ {{ movie.vote_average or 'N/A' }}/10
+                </p>
+                <p style="font-size:12px;color:var(--ink-soft);">{{ movie.overview|truncate(100) if movie.overview else 'No overview available.' }}</p>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="no-results" style="text-align:center;padding:40px 0;">
+          {% if query %}
+            No movies found for "{{ query }}"
+          {% else %}
+            No movies currently playing. Please check back later.
+          {% endif %}
+        </p>
+      {% endif %}
+
+    <!-- ============================================================ -->
+    <!-- STREAMING SEARCH                                             -->
+    <!-- ============================================================ -->
+    {% elif is_streaming_search %}
+      <div class="search-box-wrap" style="max-width:100%; position:relative;">
+        <form method="get" action="{{ url_for('streaming') }}" style="display:flex;gap:10px;flex-wrap:wrap;" autocomplete="off">
+          <div style="flex:1;min-width:200px;position:relative;">
+            <input type="text" name="q" id="searchInput" placeholder="Search for movies or TV shows..." value="{{ query }}" style="width:100%;padding:12px 16px;border:2px solid var(--ink-soft);border-radius:4px;font-size:16px;background:#fff;" autocomplete="off" />
+            <div id="autocompleteList" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid var(--ink-soft); border-top:none; border-radius:0 0 4px 4px; max-height:300px; overflow-y:auto; z-index:100; box-shadow:0 4px 12px rgba(0,0,0,0.2);"></div>
+          </div>
+          <button type="submit" class="btn primary">Search</button>
+          {% if query %}<a href="{{ url_for('streaming') }}" class="btn ghost">Clear</a>{% endif %}
+        </form>
+      </div>
+      {% if query %}
+        {% if results %}
+          <p style="color:var(--ink-soft);margin-bottom:16px;">Found {{ results|length }} results for "{{ query }}"</p>
+          <div class="grid cols-4">
+            {% for item in results %}
+              <div class="card">
+                <div class="thumb" style="aspect-ratio:2/3;">
+                  {% if item.image_url %}<img src="{{ item.image_url }}" alt="{{ item.display_title }}" style="width:100%;height:100%;object-fit:cover;" />
+                  {% else %}<div style="width:100%;height:100%;background:var(--ink-soft);display:flex;align-items:center;justify-content:center;color:var(--paper);font-family:'Anton',sans-serif;font-size:16px;text-align:center;padding:10px;">No Image</div>{% endif %}
+                </div>
+                <div class="meta">
+                  <div class="kicker mono">{{ item.media_type|capitalize }}</div>
+                  <h3><a href="{% if item.media_type == 'movie' %}/tmdb/movie/{{ item.id }}{% else %}/tmdb/tv/{{ item.id }}{% endif %}" style="color:var(--red);">{{ item.display_title }}</a></h3>
+                  <p style="font-size:12px;color:var(--ink-soft);">{{ item.date }} · {{ item.vote_average or 'N/A' }}/10</p>
+                  <p style="font-size:12px;color:var(--ink-soft);">{{ item.overview|truncate(100) if item.overview else 'No overview available.' }}</p>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}<p class="no-results">No results found for "{{ query }}"</p>{% endif %}
+      {% else %}<p style="color:var(--ink-soft);text-align:center;padding:20px 0;font-size:16px;">{{ desc }}</p>{% endif %}
+
+    <!-- ============================================================ -->
+    <!-- PEOPLE SEARCH                                                -->
+    <!-- ============================================================ -->
+    {% elif is_people_search %}
+      <div class="search-box-wrap" style="max-width:100%; position:relative;">
+        <form method="get" action="{{ url_for('people') }}" style="display:flex;gap:10px;flex-wrap:wrap;" autocomplete="off">
+          <div style="flex:1;min-width:200px;position:relative;">
+            <input type="text" name="q" id="searchInput" placeholder="Search for actors, directors, or other film professionals..." value="{{ query }}" style="width:100%;padding:12px 16px;border:2px solid var(--ink-soft);border-radius:4px;font-size:16px;background:#fff;" autocomplete="off" />
+            <div id="autocompleteList" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid var(--ink-soft); border-top:none; border-radius:0 0 4px 4px; max-height:300px; overflow-y:auto; z-index:100; box-shadow:0 4px 12px rgba(0,0,0,0.2);"></div>
+          </div>
+          <button type="submit" class="btn primary">Search</button>
+          {% if query %}<a href="{{ url_for('people') }}" class="btn ghost">Clear</a>{% endif %}
+        </form>
+      </div>
+      {% if query %}
+        {% if results %}
+          <p style="color:var(--ink-soft);margin-bottom:16px;">Found {{ results|length }} people for "{{ query }}"</p>
+          <div class="grid cols-4">
+            {% for person in results %}
+              <div class="card">
+                <div class="thumb" style="aspect-ratio:1/1;border-radius:50%;overflow:hidden;">
+                  {% if person.image_url %}<img src="{{ person.image_url }}" alt="{{ person.name }}" style="width:100%;height:100%;object-fit:cover;" />
+                  {% else %}<div style="width:100%;height:100%;background:var(--ink-soft);display:flex;align-items:center;justify-content:center;color:var(--paper);font-family:'Anton',sans-serif;font-size:40px;text-align:center;">{{ person.name[0] if person.name else '?' }}</div>{% endif %}
+                </div>
+                <div class="meta">
+                  <div class="kicker mono">{{ person.known_for_department }}</div>
+                  <h3><a href="/tmdb/person/{{ person.id }}" style="color:var(--red);">{{ person.name }}</a></h3>
+                  {% if person.known_for %}<p style="font-size:12px;color:var(--ink-soft);">{{ person.known_for }}</p>{% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}<p class="no-results">No people found for "{{ query }}"</p>{% endif %}
+      {% else %}<p style="color:var(--ink-soft);text-align:center;padding:20px 0;font-size:16px;">Search for actors, directors, writers, and other film industry professionals.</p>{% endif %}
+
+    <!-- ============================================================ -->
+    <!-- GENRE PAGE                                                   -->
+    <!-- ============================================================ -->
+    {% elif title == "Browse By Genre" %}
+      <p style="font-size:18px;color:var(--ink-soft);margin-bottom:20px;">{{ desc }}</p>
+      <div class="genre-strip" style="margin:30px 0;">
+        {% for g in genres %}<a href="{{ url_for('genre', genre=g.id) }}" class="genre-chip" style="{% if selected_genre == g.id|string %}background:var(--red);{% endif %}">{{ g.name }}</a>{% endfor %}
+      </div>
+      {% if results %}
+        <p style="color:var(--ink-soft);margin-bottom:16px;">Showing movies in this genre</p>
+        <div class="grid cols-4">
+          {% for item in results %}
+            <div class="card">
+              <div class="thumb" style="aspect-ratio:2/3;">
+                {% if item.image_url %}<img src="{{ item.image_url }}" alt="{{ item.title }}" style="width:100%;height:100%;object-fit:cover;" />
+                {% else %}<div style="width:100%;height:100%;background:var(--ink-soft);display:flex;align-items:center;justify-content:center;color:var(--paper);font-family:'Anton',sans-serif;font-size:16px;text-align:center;padding:10px;">No Image</div>{% endif %}
+              </div>
+              <div class="meta">
+                <div class="kicker mono">Movie</div>
+                <h3><a href="/tmdb/movie/{{ item.id }}" style="color:var(--red);">{{ item.title }}</a></h3>
+                <p style="font-size:12px;color:var(--ink-soft);">{{ item.release_date or 'N/A' }} · {{ item.vote_average or 'N/A' }}/10</p>
+                <p style="font-size:12px;color:var(--ink-soft);">{{ item.overview|truncate(100) if item.overview else 'No overview available.' }}</p>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% elif selected_genre %}<p class="no-results">No movies found in this genre.</p>{% endif %}
+
+    <!-- ============================================================ -->
+    <!-- ORIGINS PAGE                                                 -->
+    <!-- ============================================================ -->
+    {% elif is_origins %}
+      <div class="timeline">
+        <div class="timeline-item"><p class="timeline-date">2023</p><h2>A Solo Voice: Mr. Extrodin Thinks</h2><p>It started with Khutso Mataboge — known as KEM, or Mr. Extrodin — wanting a podcast that actually dissected movies. He began with solo reviews and trailer talks on films like The Flash, Spider-Man: Across the Spider-Verse, Air, and Teenage Mutant Ninja Turtles: Mutant Mayhem. The name African Frame didn't exist yet; all of it lived on the Mr. Extrodin Thinks YouTube channel.</p></div>
+        <div class="timeline-item"><p class="timeline-date">2023</p><h2>Bringing In Roberto</h2><p>Khutso had known Vuyisile Roberto Sibeko since 2014, and had long admired Roberto's WhatsApp statuses about his own film projects like God's Mandate, plus his deep movie knowledge and scriptwriting. It was clear Roberto belonged on the podcast.</p></div>
+        <div class="timeline-item"><p class="timeline-date">2023</p><h2>The Name Is Born</h2><p>Together they launched a weekly show dissecting the work of Christopher Nolan, Quentin Tarantino, Brian De Palma, and more. Roberto pushed for structure — writing out each film breakdown beforehand instead of reviewing in a non-linear, freeform way. The new flow worked, and out of it came the name African Frame. It began as a playlist before Khutso migrated it to its own channel, first called Mr. Extrodin, then renamed African Frame.</p></div>
+        <div class="timeline-item"><p class="timeline-date">May 2024</p><h2>Cinema SodZA Is Born</h2><p>Khutso's habit of checking the Numetro app for what was screening sparked an idea: a show built around movies currently in theatres. What began as The Numetro Show became Cinema SodZA — checking that month's theatrical releases, breaking down trailers, and making box office predictions.</p></div>
+        <div class="timeline-item"><p class="timeline-date">2024</p><h2>Box Office Clash Splits Off</h2><p>Predictions needed a payoff, so the team started revisiting them a month later against real box office results. That comparison outgrew its segment and became its own show: Box Office Clash. Both started as playlists on the African Frame channel until Roberto pushed for Cinema SodZA to become its own YouTube channel — now home to Cinema SodZA, Box Office Clash, 7UP, and Crisis Event.</p></div>
+        <div class="timeline-item"><p class="timeline-date">2024</p><h2>Weekly Pics</h2><p>Roberto wanted a format where each host watched and reviewed a film independently, without the other seeing it first — a way to keep reviews shorter and unfiltered. Weekly Pics was born.</p></div>
+        <div class="timeline-item"><p class="timeline-date">2024</p><h2>7UP</h2><p>Roberto's focus on movie franchises led to 7 and Up — 7UP for short — a show built around film franchises with seven or more entries, covering the Marvel Cinematic Universe, Mission: Impossible, the DC Extended Universe, and beyond.</p></div>
+        <div class="timeline-item"><p class="timeline-date">2024</p><h2>Series Nton Nton</h2><p>Not wanting series to go uncovered, Khutso launched Series Nton Nton — a channel dedicated entirely to series reviews and breakdowns.</p></div>
+        <div class="timeline-item"><p class="timeline-date">2024</p><h2>Crisis Event</h2><p>Over the years, guests with a genuine passion for film became regulars — Zanozuko Mlambo, Khetho Borole (who became a permanent co-host), Tebello Khala, Alize, Kagiso (Dude The Movie Guy), and Cole from Movie Doctor. When several of them landed in the Cinema SodZA WhatsApp group, Roberto had an idea: gather everyone, Justice League-style, for a laid-back conversation about the latest movies. Named after the DC Comics event of the same name, Crisis Event was born.</p></div>
+      </div>
+      <div class="notch-row red"><div class="notch"></div><div class="fill"></div></div>
+      <h2 class="disp" style="font-size:28px;margin:40px 0 16px;">Where It's Headed</h2>
+      <p style="color:var(--ink-soft);line-height:1.65;font-size:15px;">What started as trailer talk on a solo YouTube channel has grown into African Frame, Cinema SodZA, African Frame Plus, and Series Nton Nton — four channels, seven shows, and a rotating cast of guests who just can't stop talking about film. The passion for movies is what got Khutso and Roberto here, and it's what keeps them building — with one goal in mind: to become the biggest movie platform in Africa.</p>
+
+    <!-- ============================================================ -->
+    <!-- SHOP / COMING SOON                                            -->
+    <!-- ============================================================ -->
+    {% elif coming_soon %}
+      <div style="text-align:center;padding:60px 0;background:var(--paper-dim);border-radius:8px;">
+        <h3 style="font-size:40px;font-family:'Anton',sans-serif;color:var(--red);">COMING SOON</h3>
+        <p style="font-size:20px;color:var(--ink-soft);margin-top:10px;">{{ desc }}</p>
+      </div>
+
+    <!-- ============================================================ -->
+    <!-- OTHER STATIC PAGES                                           -->
+    <!-- ============================================================ -->
+    {% else %}
+      <p style="font-size:18px;color:var(--ink-soft);margin-bottom:20px;">{{ desc }}</p>
+
+      <!-- Shows -->
+      {% if title == "Our Shows" %}
+        <div class="shows-grid">
+          <div class="show-panel"><div class="show-eyebrow mono">Flagship</div><h3>African Frame</h3><p>In-depth movie reviews, breakdowns, and analysis.</p><a class="btn ghost" href="https://youtube.com/@africanframefilmchannel?si=B2IeY26ZuPtzO43z" target="_blank">▶ Watch</a></div>
+          <div class="show-panel red"><div class="show-eyebrow mono">Series Coverage</div><h3>Series Nton Nton</h3><p>Episode-by-episode breakdowns and season verdicts.</p><a class="btn ghost" href="#" target="_blank">▶ Watch</a></div>
+        </div>
+        <div class="shows-grid" style="margin-top:2px;">
+          <div class="show-panel" style="background:var(--red-deep);"><div class="show-eyebrow mono">Box Office Desk</div><h3>Cinema SodZA</h3><p>Box office news, trailer reactions, and industry buzz.</p><a class="btn ghost" href="https://youtube.com/@cinemasoda_sa?si=jHRrTdX5SRLQojHi" target="_blank">▶ Watch</a></div>
+          <div class="show-panel" style="background:#1A1512;"><div class="show-eyebrow mono">Short Reviews</div><h3>African Frame Plus</h3><p>Short reviews with other content creators.</p><a class="btn ghost" href="https://youtube.com/@africanframeplus?si=ZprQM5XAEaucO4P5" target="_blank">▶ Watch</a></div>
+        </div>
+
+      <!-- Features -->
+      {% elif title == "Features" %}
+        <div class="grid cols-3">
+          <div class="card"><div class="thumb"><span class="tag mono">Feature</span><div class="poster p-fest"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>How Three Independent Studios Are Rewriting The Rules</h3><p>A look at the crews skipping traditional funding.</p></div></div>
+          <div class="card"><div class="thumb"><span class="tag mono">Ranked</span><div class="poster p-scifi"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>Every Sequel In The Franchise, Ranked</h3></div></div>
+          <div class="card"><div class="thumb"><span class="tag mono">Long Read</span><div class="poster p-drama"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>The Rise of African Cinema: A New Wave</h3><p>How local filmmakers are making global waves.</p></div></div>
+        </div>
+
+      <!-- Awards -->
+      {% elif title == "Awards" %}
+        <div class="grid cols-3">
+          <div class="card"><div class="thumb"><span class="tag mono">Awards</span><div class="poster p-fest"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>Oscar Predictions 2025</h3></div></div>
+          <div class="card"><div class="thumb"><span class="tag mono">Awards</span><div class="poster p-comedy"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>Golden Globe Winners</h3></div></div>
+          <div class="card"><div class="thumb"><span class="tag mono">Awards</span><div class="poster p-drama"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>Local Film Awards Highlights</h3></div></div>
+        </div>
+
+      <!-- Events -->
+      {% elif title == "Events" %}
+        <div class="grid cols-3">
+          <div class="card"><div class="thumb"><span class="tag mono">Events</span><div class="poster p-news3"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>Upcoming Screenings &amp; Meetups</h3></div></div>
+          <div class="card"><div class="thumb"><span class="tag mono">Events</span><div class="poster p-action"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>Film Festival Calendar</h3></div></div>
+          <div class="card"><div class="thumb"><span class="tag mono">Events</span><div class="poster p-comedy"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>Industry Networking Nights</h3></div></div>
+        </div>
+
+      <!-- Videos -->
+      {% elif title == "Videos" %}
+        <div class="grid cols-3">
+          <div class="card"><div class="thumb"><span class="tag mono">Video</span><div class="poster p-action"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>This Week On The Channel</h3></div></div>
+          <div class="card"><div class="thumb"><span class="tag mono">Video</span><div class="poster p-drama"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>Trailer Reactions</h3></div></div>
+          <div class="card"><div class="thumb"><span class="tag mono">Video</span><div class="poster p-scifi"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>Live Streams</h3></div></div>
+        </div>
+
+      <!-- Podcast -->
+      {% elif title == "Podcast" %}
+        <div class="grid cols-2">
+          <div class="card"><div class="thumb"><span class="tag mono">Podcast</span><div class="poster p-news4"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>Latest Episode: The Oscars Special</h3></div></div>
+          <div class="card"><div class="thumb"><span class="tag mono">Podcast</span><div class="poster p-comedy"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>Series Nton Nton: Season Finale Discussion</h3></div></div>
+        </div>
+
+      <!-- Community -->
+      {% elif title == "Community" %}
+        <div class="grid cols-3">
+          <div class="card"><div class="thumb"><span class="tag mono">Community</span><div class="poster p-news1"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>Discussion Forums</h3></div></div>
+          <div class="card"><div class="thumb"><span class="tag mono">Community</span><div class="poster p-news2"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>Watch Parties</h3></div></div>
+          <div class="card"><div class="thumb"><span class="tag mono">Community</span><div class="poster p-news3"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>Fan Reviews</h3></div></div>
+        </div>
+      {% endif %}
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
