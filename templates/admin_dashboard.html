@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<section class="block" style="padding-top:40px;">
+  <div class="wrap">
+    <div class="block-head">
+      <h2>Admin Dashboard</h2>
+      <a href="{{ url_for('logout') }}" class="btn ghost" style="color:var(--red);">Logout</a>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px;margin-top:20px;">
+      {% for key, value in stats.items() %}
+        <div style="background:var(--paper-dim);padding:20px;border-radius:8px;text-align:center;">
+          <div style="font-size:32px;font-family:'Anton',sans-serif;color:var(--red);">{{ value }}</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;">
+            {{ key.replace('_', ' ')|capitalize }}
+          </div>
+          <a href="{{ url_for('admin_' + key) }}" style="display:inline-block;margin-top:10px;font-size:13px;color:var(--red);">Manage</a>
+        </div>
+      {% endfor %}
+    </div>
+    <div style="margin-top:40px;">
+      <a href="{{ url_for('admin_origins') }}" class="btn primary">Edit Origins Page</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit' if not is_new else 'Add' }} {{ collection|capitalize }}{% endblock %}
+
+{% block content %}
+<section class="block" style="padding-top:40px;">
+  <div class="wrap narrow">
+    <div class="block-head">
+      <h2>{{ 'Edit' if not is_new else 'Add' }} {{ collection|capitalize }}</h2>
+      <a href="{{ url_for('admin_' + collection) }}" class="btn ghost">Back</a>
+    </div>
+    <form method="post" enctype="multipart/form-data" style="background:var(--paper-dim);padding:30px;border-radius:8px;">
+      {% for field in fields %}
+        <div style="margin-bottom:16px;">
+          <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">{{ field.label }}</label>
+          {% if field.type == 'textarea' %}
+            <textarea name="{{ field.name }}" rows="6" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:4px;font-family:inherit;">{{ item.get(field.name, '') }}</textarea>
+          {% else %}
+            <input type="text" name="{{ field.name }}" value="{{ item.get(field.name, '') }}" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:4px;font-family:inherit;">
+          {% endif %}
+        </div>
+      {% endfor %}
+
+      <!-- Image upload (only for collections that have an image_url field) -->
+      {% if 'image_url' in item or 'image_url' in fields|map(attribute='name') %}
+        <div style="margin-bottom:16px;">
+          <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Upload Image</label>
+          {% if item.image_url %}
+            <div style="margin-bottom:8px;">
+              <img src="{{ item.image_url }}" alt="Current image" style="max-width:150px;max-height:200px;border:1px solid var(--line);">
+              <p style="font-size:12px;color:var(--ink-soft);">Current image</p>
+            </div>
+          {% endif %}
+          <input type="file" name="image" accept="image/*" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:4px;background:#fff;">
+          <p style="font-size:11px;color:var(--ink-soft);margin-top:4px;">Leave empty to keep existing image (or tick the box below to remove it).</p>
+          <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;margin-top:6px;">
+            <input type="checkbox" name="remove_image" value="1" style="margin-right:6px;">
+            Remove existing image
+          </label>
+        </div>
+      {% endif %}
+
+      <div style="margin-top:20px;display:flex;gap:10px;">
+        <button type="submit" class="btn primary">Save</button>
+        <a href="{{ url_for('admin_' + collection) }}" class="btn ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

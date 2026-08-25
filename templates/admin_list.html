@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Manage {{ title }}{% endblock %}
+
+{% block content %}
+<section class="block" style="padding-top:40px;">
+  <div class="wrap">
+    <div class="block-head">
+      <h2>Manage {{ title }}</h2>
+      <div>
+        <a href="{{ url_for('admin_' + collection + '_new') }}" class="btn primary">+ Add New</a>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn ghost" style="margin-left:10px;">Dashboard</a>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      {% if items %}
+        {% for item in items %}
+          <div style="display:flex;justify-content:space-between;align-items:center;background:var(--paper-dim);padding:12px 16px;border-radius:4px;">
+            <div>
+              <strong>{{ item.get('title') or item.get('name') or item.get('id') }}</strong>
+              <span style="font-size:12px;color:var(--ink-soft);margin-left:10px;">{{ item.get('created_at', '')|truncate(10) }}</span>
+            </div>
+            <div>
+              <a href="{{ url_for('admin_' + collection + '_edit', item_id=item.id) }}" style="margin-right:12px;">Edit</a>
+              <form method="post" action="{{ url_for('admin_' + collection + '_delete', item_id=item.id) }}" style="display:inline;">
+                <button type="submit" onclick="return confirm('Delete this item?')" style="background:none;border:none;color:var(--red);cursor:pointer;text-decoration:underline;">Delete</button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p style="color:var(--ink-soft);">No items yet. <a href="{{ url_for('admin_' + collection + '_new') }}">Add one</a>.</p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -190,12 +190,33 @@
       </div>
 
     <!-- ============================================================ -->
-    <!-- OTHER STATIC PAGES                                           -->
+    <!-- DYNAMIC CONTENT (when items is passed from routes)           -->
+    <!-- ============================================================ -->
+    {% elif items %}
+      <div class="grid cols-3">
+        {% for item in items %}
+          <div class="card">
+            <div class="thumb">
+              <span class="tag mono">{{ item.get('category', 'Item') }}</span>
+              <div class="poster p-news{{ loop.index % 4 + 1 }}"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div>
+            </div>
+            <div class="meta">
+              <h3>{{ item.title }}</h3>
+              {% if item.body %}<p>{{ item.body|truncate(100) }}</p>{% endif %}
+              {% if item.description %}<p>{{ item.description|truncate(100) }}</p>{% endif %}
+              <div class="foot-meta"><span>{{ item.created_at|string|truncate(10) if item.created_at else '' }}</span></div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+    <!-- ============================================================ -->
+    <!-- STATIC FALLBACK CONTENT (for pages without dynamic items)    -->
     <!-- ============================================================ -->
     {% else %}
       <p style="font-size:18px;color:var(--ink-soft);margin-bottom:20px;">{{ desc }}</p>
 
-      <!-- Shows -->
+      <!-- Shows (fallback if no items passed) -->
       {% if title == "Our Shows" %}
         <div class="shows-grid">
           <div class="show-panel"><div class="show-eyebrow mono">Flagship</div><h3>African Frame</h3><p>In-depth movie reviews, breakdowns, and analysis.</p><a class="btn ghost" href="https://youtube.com/@africanframefilmchannel?si=B2IeY26ZuPtzO43z" target="_blank">▶ Watch</a></div>
@@ -206,7 +227,7 @@
           <div class="show-panel" style="background:#1A1512;"><div class="show-eyebrow mono">Short Reviews</div><h3>African Frame Plus</h3><p>Short reviews with other content creators.</p><a class="btn ghost" href="https://youtube.com/@africanframeplus?si=ZprQM5XAEaucO4P5" target="_blank">▶ Watch</a></div>
         </div>
 
-      <!-- Features -->
+      <!-- Features fallback -->
       {% elif title == "Features" %}
         <div class="grid cols-3">
           <div class="card"><div class="thumb"><span class="tag mono">Feature</span><div class="poster p-fest"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>How Three Independent Studios Are Rewriting The Rules</h3><p>A look at the crews skipping traditional funding.</p></div></div>
@@ -214,7 +235,7 @@
           <div class="card"><div class="thumb"><span class="tag mono">Long Read</span><div class="poster p-drama"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>The Rise of African Cinema: A New Wave</h3><p>How local filmmakers are making global waves.</p></div></div>
         </div>
 
-      <!-- Awards -->
+      <!-- Awards fallback -->
       {% elif title == "Awards" %}
         <div class="grid cols-3">
           <div class="card"><div class="thumb"><span class="tag mono">Awards</span><div class="poster p-fest"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>Oscar Predictions 2025</h3></div></div>
@@ -222,7 +243,7 @@
           <div class="card"><div class="thumb"><span class="tag mono">Awards</span><div class="poster p-drama"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>Local Film Awards Highlights</h3></div></div>
         </div>
 
-      <!-- Events -->
+      <!-- Events fallback -->
       {% elif title == "Events" %}
         <div class="grid cols-3">
           <div class="card"><div class="thumb"><span class="tag mono">Events</span><div class="poster p-news3"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>Upcoming Screenings &amp; Meetups</h3></div></div>
@@ -230,7 +251,7 @@
           <div class="card"><div class="thumb"><span class="tag mono">Events</span><div class="poster p-comedy"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>Industry Networking Nights</h3></div></div>
         </div>
 
-      <!-- Videos -->
+      <!-- Videos fallback -->
       {% elif title == "Videos" %}
         <div class="grid cols-3">
           <div class="card"><div class="thumb"><span class="tag mono">Video</span><div class="poster p-action"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>This Week On The Channel</h3></div></div>
@@ -238,14 +259,14 @@
           <div class="card"><div class="thumb"><span class="tag mono">Video</span><div class="poster p-scifi"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>Live Streams</h3></div></div>
         </div>
 
-      <!-- Podcast -->
+      <!-- Podcast fallback -->
       {% elif title == "Podcast" %}
         <div class="grid cols-2">
           <div class="card"><div class="thumb"><span class="tag mono">Podcast</span><div class="poster p-news4"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>Latest Episode: The Oscars Special</h3></div></div>
           <div class="card"><div class="thumb"><span class="tag mono">Podcast</span><div class="poster p-comedy"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>Series Nton Nton: Season Finale Discussion</h3></div></div>
         </div>
 
-      <!-- Community -->
+      <!-- Community fallback -->
       {% elif title == "Community" %}
         <div class="grid cols-3">
           <div class="card"><div class="thumb"><span class="tag mono">Community</span><div class="poster p-news1"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div></div><div class="meta"><h3>Discussion Forums</h3></div></div>

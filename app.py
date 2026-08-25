@@ -3,151 +3,168 @@ import data
 import secrets
 import requests
 import os
+import uuid
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
+from functools import wraps
+from werkzeug.utils import secure_filename
+from supabase_client import supabase
 
-# Load environment variables from .env file (for local development)
 load_dotenv()
 
 app = Flask(__name__)
-
-# ---------- APP CONFIG ----------
-# Use environment variable for secret key, fallback to random for local
 app.secret_key = os.getenv('SECRET_KEY', secrets.token_hex(16))
+
+# ---------- UPLOAD CONFIG (only for validation) ----------
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # ---------- TMDB CONFIG ----------
 TMDB_API_KEY = os.getenv('TMDB_API_KEY', '')
 TMDB_BASE = 'https://api.themoviedb.org/3'
 
-# ---------- NEWSAPI CONFIG ----------
-NEWSAPI_KEY = os.getenv('NEWSAPI_KEY', '')
-NEWSAPI_BASE = 'https://newsapi.org/v2'
-
-# ---------- ADMIN CREDENTIALS (can be overridden by env vars) ----------
+# ---------- ADMIN CREDENTIALS ----------
 ADMIN_USER = os.getenv('ADMIN_USER', 'admin')
 ADMIN_PASS = os.getenv('ADMIN_PASS', 'password123')
 
+# ---------- FIELD DEFINITIONS ----------
+COLLECTION_FIELDS = {
+    'news': [
+        {'name': 'title', 'label': 'Title', 'type': 'text'},
+        {'name': 'category', 'label': 'Category', 'type': 'text'},
+        {'name': 'body', 'label': 'Body', 'type': 'textarea'},
+        {'name': 'image_url', 'label': 'Image URL', 'type': 'text'},
+        {'name': 'people_tags', 'label': 'People Tags (comma-separated IDs)', 'type': 'text'}
+    ],
+    'reviews': [
+        {'name': 'title', 'label': 'Title', 'type': 'text'},
+        {'name': 'genre', 'label': 'Genre', 'type': 'text'},
+        {'name': 'score', 'label': 'Score (0-10)', 'type': 'text'},
+        {'name': 'author', 'label': 'Author', 'type': 'text'},
+        {'name': 'body', 'label': 'Review Body', 'type': 'textarea'},
+        {'name': 'people_tags', 'label': 'People Tags (comma-separated IDs)', 'type': 'text'}
+    ],
+    'features': [
+        {'name': 'title', 'label': 'Title', 'type': 'text'},
+        {'name': 'category', 'label': 'Category', 'type': 'text'},
+        {'name': 'body', 'label': 'Body', 'type': 'textarea'},
+        {'name': 'image_url', 'label': 'Image URL', 'type': 'text'},
+        {'name': 'people_tags', 'label': 'People Tags (comma-separated IDs)', 'type': 'text'}
+    ],
+    'shows': [
+        {'name': 'name', 'label': 'Show Name', 'type': 'text'},
+        {'name': 'description', 'label': 'Description', 'type': 'textarea'},
+        {'name': 'category', 'label': 'Category', 'type': 'text'},
+        {'name': 'youtube_url', 'label': 'YouTube URL', 'type': 'text'}
+    ],
+    'events': [
+        {'name': 'title', 'label': 'Title', 'type': 'text'},
+        {'name': 'description', 'label': 'Description', 'type': 'textarea'},
+        {'name': 'date', 'label': 'Date', 'type': 'text'},
+        {'name': 'location', 'label': 'Location', 'type': 'text'}
+    ],
+    'videos': [
+        {'name': 'title', 'label': 'Title', 'type': 'text'},
+        {'name': 'description', 'label': 'Description', 'type': 'textarea'},
+        {'name': 'embed_url', 'label': 'Embed URL', 'type': 'text'},
+        {'name': 'show', 'label': 'Show', 'type': 'text'}
+    ],
+    'podcast_episodes': [
+        {'name': 'title', 'label': 'Title', 'type': 'text'},
+        {'name': 'description', 'label': 'Description', 'type': 'textarea'},
+        {'name': 'embed_url', 'label': 'Embed URL', 'type': 'text'},
+        {'name': 'episode_number', 'label': 'Episode Number', 'type': 'text'}
+    ],
+    'community_posts': [
+        {'name': 'title', 'label': 'Title', 'type': 'text'},
+        {'name': 'body', 'label': 'Body', 'type': 'textarea'},
+        {'name': 'author', 'label': 'Author', 'type': 'text'}
+    ],
+    'awards': [
+        {'name': 'title', 'label': 'Title', 'type': 'text'},
+        {'name': 'category', 'label': 'Category', 'type': 'text'},
+        {'name': 'year', 'label': 'Year', 'type': 'text'},
+        {'name': 'description', 'label': 'Description', 'type': 'textarea'}
+    ],
+    'people': [
+        {'name': 'name', 'label': 'Name', 'type': 'text'},
+        {'name': 'role', 'label': 'Role', 'type': 'text'},
+        {'name': 'bio', 'label': 'Bio', 'type': 'textarea'},
+        {'name': 'image_url', 'label': 'Image URL', 'type': 'text'}
+    ]
+}
+
+# ---------- DECORATORS ----------
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # ---------- TMDB HELPERS ----------
 def search_tmdb_movie(query):
-    if not TMDB_API_KEY:
-        return []
+    if not TMDB_API_KEY: return []
     url = f"{TMDB_BASE}/search/movie"
     params = {'api_key': TMDB_API_KEY, 'query': query, 'language': 'en-US'}
     try:
         r = requests.get(url, params=params, timeout=5)
         return r.json().get('results', []) if r.status_code == 200 else []
-    except:
-        return []
+    except: return []
 
 def search_tmdb_tv(query):
-    if not TMDB_API_KEY:
-        return []
+    if not TMDB_API_KEY: return []
     url = f"{TMDB_BASE}/search/tv"
     params = {'api_key': TMDB_API_KEY, 'query': query, 'language': 'en-US'}
     try:
         r = requests.get(url, params=params, timeout=5)
         return r.json().get('results', []) if r.status_code == 200 else []
-    except:
-        return []
+    except: return []
 
 def search_tmdb_person(query):
-    if not TMDB_API_KEY:
-        return []
+    if not TMDB_API_KEY: return []
     url = f"{TMDB_BASE}/search/person"
     params = {'api_key': TMDB_API_KEY, 'query': query, 'language': 'en-US'}
     try:
         r = requests.get(url, params=params, timeout=5)
         return r.json().get('results', []) if r.status_code == 200 else []
-    except:
-        return []
+    except: return []
 
 def discover_movies(genre_id=None, sort_by='popularity.desc'):
-    if not TMDB_API_KEY:
-        return []
+    if not TMDB_API_KEY: return []
     url = f"{TMDB_BASE}/discover/movie"
     params = {'api_key': TMDB_API_KEY, 'language': 'en-US', 'sort_by': sort_by}
-    if genre_id:
-        params['with_genres'] = genre_id
+    if genre_id: params['with_genres'] = genre_id
     try:
         r = requests.get(url, params=params, timeout=5)
         return r.json().get('results', []) if r.status_code == 200 else []
-    except:
-        return []
+    except: return []
 
 def get_genre_list():
-    if not TMDB_API_KEY:
-        return []
+    if not TMDB_API_KEY: return []
     url = f"{TMDB_BASE}/genre/movie/list"
     params = {'api_key': TMDB_API_KEY, 'language': 'en-US'}
     try:
         r = requests.get(url, params=params, timeout=5)
         return r.json().get('genres', []) if r.status_code == 200 else []
-    except:
-        return []
+    except: return []
 
 def get_now_playing_movies(region='US', page=1):
-    if not TMDB_API_KEY:
-        return []
+    if not TMDB_API_KEY: return []
     url = f"{TMDB_BASE}/movie/now_playing"
-    params = {
-        'api_key': TMDB_API_KEY,
-        'language': 'en-US',
-        'region': region,
-        'page': page
-    }
+    params = {'api_key': TMDB_API_KEY, 'language': 'en-US', 'region': region, 'page': page}
     try:
         r = requests.get(url, params=params, timeout=5)
         if r.status_code == 200:
-            data = r.json()
-            results = data.get('results', [])
+            results = r.json().get('results', [])
             for movie in results:
                 movie['image_url'] = f"https://image.tmdb.org/t/p/w185{movie['poster_path']}" if movie.get('poster_path') else None
             return results
-        else:
-            return []
-    except:
         return []
-
-
-# ---------- NEWSAPI HELPER ----------
-def fetch_news(query=None, per_page=12):
-    if not NEWSAPI_KEY:
-        return []
-    url = f"{NEWSAPI_BASE}/everything"
-    params = {
-        'apiKey': NEWSAPI_KEY,
-        'language': 'en',
-        'pageSize': per_page,
-        'sortBy': 'publishedAt'
-    }
-    if query:
-        params['q'] = query
-    else:
-        params['q'] = 'movie OR film OR cinema OR "TV show" OR "television series" OR Netflix OR "streaming series" OR "movie review"'
-    week_ago = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
-    params['from'] = week_ago
-    try:
-        r = requests.get(url, params=params, timeout=10)
-        if r.status_code == 200:
-            data = r.json()
-            articles = data.get('articles', [])
-            normalized = []
-            for a in articles:
-                normalized.append({
-                    'title': a.get('title', ''),
-                    'description': a.get('description', ''),
-                    'url': a.get('url', '#'),
-                    'image': a.get('urlToImage'),
-                    'source': a.get('source', {}).get('name', 'Unknown'),
-                    'published_at': a.get('publishedAt', '')
-                })
-            return normalized
-        else:
-            return []
-    except:
-        return []
-
+    except: return []
 
 # ---------- LOGIN / LOGOUT ----------
 @app.route('/login', methods=['GET', 'POST'])
@@ -157,7 +174,7 @@ def login():
         password = request.form.get('password', '').strip()
         if username == ADMIN_USER and password == ADMIN_PASS:
             session['logged_in'] = True
-            return redirect(url_for('admin'))
+            return redirect(url_for('admin_dashboard'))
         else:
             return render_template('login.html', error="Invalid username or password")
     return render_template('login.html', error=None)
@@ -167,44 +184,188 @@ def logout():
     session.pop('logged_in', None)
     return redirect(url_for('home'))
 
+# ---------- ADMIN DASHBOARD ----------
+@app.route('/admin')
+@login_required
+def admin_dashboard():
+    stats = {
+        'news': len(data.get_news()),
+        'reviews': len(data.get_reviews()),
+        'features': len(data.get_features()),
+        'shows': len(data.get_shows()),
+        'events': len(data.get_events()),
+        'videos': len(data.get_videos()),
+        'podcast_episodes': len(data.get_podcast_episodes()),
+        'community_posts': len(data.get_community_posts()),
+        'awards': len(data.get_awards()),
+        'people': len(data.get_people())
+    }
+    return render_template('admin_dashboard.html', stats=stats)
 
-# ---------- DECORATOR ----------
-def login_required(f):
-    from functools import wraps
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not session.get('logged_in'):
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated_function
+# ---------- GENERIC ADMIN CRUD ROUTES ----------
+def admin_list(collection, title):
+    items = data.get_all_items(collection)
+    return render_template('admin_list.html',
+                           collection=collection,
+                           items=items,
+                           title=title)
 
+def admin_edit(collection, item_id=None):
+    item = data.get_item(collection, item_id) if item_id else {}
+    fields = COLLECTION_FIELDS.get(collection, [])
 
-# ---------- PAGE ROUTES ----------
+    if request.method == 'POST':
+        form_data = {}
+        for field in fields:
+            val = request.form.get(field['name'], '').strip()
+            if field['name'] == 'people_tags' and val:
+                val = [tag.strip() for tag in val.split(',') if tag.strip()]
+            form_data[field['name']] = val
+
+        # Handle image removal
+        if 'remove_image' in request.form:
+            form_data['image_url'] = None
+
+        # Handle image upload to Supabase Storage
+        if 'image' in request.files:
+            file = request.files['image']
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                base, ext = os.path.splitext(filename)
+                unique_name = f"{base}_{uuid.uuid4().hex[:8]}{ext}"
+                file_content = file.read()
+                try:
+                    # Upload to bucket 'review-images'
+                    supabase.storage.from_('review-images').upload(
+                        unique_name,
+                        file_content,
+                        file_options={"content-type": file.content_type}
+                    )
+                    # Get public URL
+                    image_url = supabase.storage.from_('review-images').get_public_url(unique_name)
+                    form_data['image_url'] = image_url
+                except Exception as e:
+                    print(f"Upload error: {e}")
+                    if item.get('image_url'):
+                        form_data['image_url'] = item['image_url']
+                    else:
+                        form_data['image_url'] = None
+            elif file.filename == '' and 'image_url' not in form_data and item.get('image_url'):
+                form_data['image_url'] = item.get('image_url')
+
+        if 'image_url' not in form_data:
+            form_data['image_url'] = item.get('image_url') if item_id else None
+
+        if item_id:
+            data.update_item(collection, item_id, form_data)
+        else:
+            data.add_item(collection, form_data)
+        return redirect(url_for(f'admin_{collection}'))
+
+    return render_template('admin_edit.html',
+                           collection=collection,
+                           item=item,
+                           fields=fields,
+                           is_new=item_id is None)
+
+def admin_delete(collection, item_id):
+    if data.delete_item(collection, item_id):
+        return redirect(url_for(f'admin_{collection}'))
+    return "Error deleting", 400
+
+# ---- Register routes for each collection ----
+collections = [
+    ('news', 'News'),
+    ('reviews', 'Reviews'),
+    ('features', 'Features'),
+    ('shows', 'Shows'),
+    ('events', 'Events'),
+    ('videos', 'Videos'),
+    ('podcast_episodes', 'Podcast Episodes'),
+    ('community_posts', 'Community Posts'),
+    ('awards', 'Awards'),
+    ('people', 'People')
+]
+
+for col, label in collections:
+    app.add_url_rule(f'/admin/{col}',
+                     endpoint=f'admin_{col}',
+                     view_func=lambda c=col, l=label: admin_list(c, l),
+                     methods=['GET'])
+    app.add_url_rule(f'/admin/{col}/new',
+                     endpoint=f'admin_{col}_new',
+                     view_func=lambda c=col: admin_edit(c),
+                     methods=['GET', 'POST'])
+    app.add_url_rule(f'/admin/{col}/<item_id>',
+                     endpoint=f'admin_{col}_edit',
+                     view_func=lambda c=col, item_id=None: admin_edit(c, item_id),
+                     methods=['GET', 'POST'])
+    app.add_url_rule(f'/admin/{col}/delete/<item_id>',
+                     endpoint=f'admin_{col}_delete',
+                     view_func=lambda c=col, item_id=None: admin_delete(c, item_id),
+                     methods=['POST'])
+
+# Special case for Origins
+@app.route('/admin/origins', methods=['GET', 'POST'])
+@login_required
+def admin_origins():
+    origins = data.get_origins()
+    if request.method == 'POST':
+        new_content = request.form.get('content', '')
+        data.update_origins({'title': origins.get('title', 'Origins'), 'content': new_content})
+        return redirect(url_for('admin_origins'))
+    return render_template('admin_origins.html', origins=origins)
+
+# ---------- PUBLIC PAGES ----------
 @app.route('/')
 def home():
-    news_articles = fetch_news(per_page=4)
+    news = data.get_news()[:4]
+    reviews = data.get_reviews()[:4]
+    shows = data.get_shows()
     return render_template('home.html',
-        news_articles=news_articles,
-        reviews=data.get_reviews()[:4]
-    )
+                           news_articles=news,
+                           reviews=reviews,
+                           shows=shows)
 
 @app.route('/news')
 def news_page():
-    local_news = data.get_news()
-    query = request.args.get('q', '').strip()
-    external_news = fetch_news(query=query if query else None, per_page=20)
-    return render_template('list.html',
-        items=local_news,
-        title="All News",
-        type="news",
-        external_news=external_news,
-        external_query=query,
-        has_api_key=bool(NEWSAPI_KEY)
-    )
+    items = data.get_news()
+    return render_template('list.html', items=items, title="All News", type="news")
 
 @app.route('/reviews')
 def reviews_page():
-    return render_template('list.html', items=data.get_reviews(), title="All Reviews", type="reviews")
+    items = data.get_reviews()
+    genre_filter = request.args.get('genre')
+    if genre_filter:
+        items = [r for r in items if r.get('genre', '').lower() == genre_filter.lower()]
+    return render_template('list.html', items=items, title="All Reviews", type="reviews")
+
+@app.route('/features')
+def features_page():
+    items = data.get_features()
+    return render_template('list.html', items=items, title="Features", type="features")
+
+@app.route('/shows')
+def shows_page():
+    items = data.get_shows()
+    return render_template('list.html', items=items, title="Our Shows", type="shows")
+
+@app.route('/streaming')
+def streaming():
+    query = request.args.get('q', '').strip()
+    results = []
+    if query:
+        movies = search_tmdb_movie(query)
+        tvshows = search_tmdb_tv(query)
+        combined = movies + tvshows
+        for m in combined:
+            m['image_url'] = f"https://image.tmdb.org/t/p/w185{m['poster_path']}" if m.get('poster_path') else None
+            m['media_type'] = 'movie' if 'title' in m else 'tv'
+            m['display_title'] = m.get('title') or m.get('name')
+            m['date'] = m.get('release_date') or m.get('first_air_date') or 'N/A'
+        results = combined
+    return render_template('page.html', title="What To Stream", desc="Search for movies or TV shows to watch.",
+                           query=query, results=results, search_type='movie_tv', show_search=True, is_streaming_search=True)
 
 @app.route('/boxoffice')
 def boxoffice():
@@ -227,31 +388,6 @@ def boxoffice():
         show_search=True
     )
 
-@app.route('/features')
-def features():
-    return render_template('page.html', title="Features", desc="Long-form breakdowns, think-pieces, and deep dives into the stories, characters, and franchises we can't stop talking about.")
-
-@app.route('/streaming')
-def streaming():
-    query = request.args.get('q', '').strip()
-    results = []
-    if query:
-        movies = search_tmdb_movie(query)
-        tvshows = search_tmdb_tv(query)
-        combined = movies + tvshows
-        for m in combined:
-            m['image_url'] = f"https://image.tmdb.org/t/p/w185{m['poster_path']}" if m.get('poster_path') else None
-            m['media_type'] = 'movie' if 'title' in m else 'tv'
-            m['display_title'] = m.get('title') or m.get('name')
-            m['date'] = m.get('release_date') or m.get('first_air_date') or 'N/A'
-        results = combined
-    return render_template('page.html', title="What To Stream", desc="Search for movies or TV shows to watch.",
-                           query=query, results=results, search_type='movie_tv', show_search=True, is_streaming_search=True)
-
-@app.route('/shows')
-def shows():
-    return render_template('page.html', title="Our Shows", desc="From flagship reviews to series coverage, box office news, and franchise deep-dives — here's everything we produce.")
-
 @app.route('/genre')
 def genre():
     genres = get_genre_list()
@@ -264,10 +400,6 @@ def genre():
         results = raw
     return render_template('page.html', title="Browse By Genre", desc="Click a genre to discover movies.",
                            genres=genres, selected_genre=genre_id, results=results)
-
-@app.route('/awards')
-def awards():
-    return render_template('page.html', title="Awards", desc="Coverage, predictions, and reactions from the biggest nights in film and television.")
 
 @app.route('/people')
 def people():
@@ -289,21 +421,31 @@ def people():
     return render_template('page.html', title="People", desc="Search for actors, directors, and other film industry professionals.",
                            query=query, results=results, is_people_search=True, show_search=True)
 
+# Static pages
+@app.route('/awards')
+def awards():
+    items = data.get_awards()
+    return render_template('page.html', title="Awards", desc="Coverage, predictions, and reactions from the biggest nights in film and television.", items=items)
+
 @app.route('/events')
 def events():
-    return render_template('page.html', title="Events", desc="Premieres, festivals, and industry events — where African Frame shows up.")
+    items = data.get_events()
+    return render_template('page.html', title="Events", desc="Premieres, festivals, and industry events — where African Frame shows up.", items=items)
 
 @app.route('/videos')
 def videos():
-    return render_template('page.html', title="Videos", desc="All our video content in one place — reviews, breakdowns, and reactions.")
+    items = data.get_videos()
+    return render_template('page.html', title="Videos", desc="All our video content in one place — reviews, breakdowns, and reactions.", items=items)
 
 @app.route('/podcast')
 def podcast():
-    return render_template('page.html', title="Podcast", desc="The African Frame Podcast — long-form conversation on the films and shows that matter.")
+    items = data.get_podcast_episodes()
+    return render_template('page.html', title="Podcast", desc="The African Frame Podcast — long-form conversation on the films and shows that matter.", items=items)
 
 @app.route('/community')
 def community():
-    return render_template('page.html', title="Community", desc="Join the conversation. Share your takes, debate your rankings, and connect with other film and series fans.")
+    items = data.get_community_posts()
+    return render_template('page.html', title="Community", desc="Join the conversation. Share your takes, debate your rankings, and connect with other film and series fans.", items=items)
 
 @app.route('/shop')
 def shop():
@@ -311,42 +453,8 @@ def shop():
 
 @app.route('/origins')
 def origins():
-    return render_template('page.html', title="Origins", desc="From one man dissecting trailers alone, to a full slate of shows across four YouTube channels — this is how African Frame came together, frame by frame.", is_origins=True)
-
-
-# ---------- AUTOCOMPLETE ----------
-@app.route('/api/autocomplete')
-def autocomplete():
-    query = request.args.get('q', '').strip()
-    if not query or len(query) < 2:
-        return jsonify([])
-    movie_results = search_tmdb_movie(query)
-    tv_results = search_tmdb_tv(query)
-    people_results = search_tmdb_person(query)
-    suggestions = []
-    for m in movie_results[:5]:
-        suggestions.append({
-            'label': m['title'],
-            'year': m.get('release_date', '').split('-')[0] if m.get('release_date') else '',
-            'type': 'movie',
-            'id': m['id']
-        })
-    for t in tv_results[:5]:
-        suggestions.append({
-            'label': t['name'],
-            'year': t.get('first_air_date', '').split('-')[0] if t.get('first_air_date') else '',
-            'type': 'tv',
-            'id': t['id']
-        })
-    for p in people_results[:5]:
-        suggestions.append({
-            'label': p['name'],
-            'year': '',
-            'type': 'person',
-            'id': p['id']
-        })
-    return jsonify(suggestions[:12])
-
+    origins_data = data.get_origins()
+    return render_template('page.html', title="Origins", desc=origins_data.get('content', ''), is_origins=True)
 
 # ---------- TMDB DETAIL ROUTES ----------
 @app.route('/tmdb/person/<int:person_id>')
@@ -358,8 +466,7 @@ def tmdb_person_detail(person_id):
         if r.status_code == 200:
             person = r.json()
             return render_template('tmdb_detail.html', person=person, type='person')
-    except:
-        pass
+    except: pass
     return "Person not found", 404
 
 @app.route('/tmdb/movie/<int:movie_id>')
@@ -371,8 +478,7 @@ def tmdb_movie_detail(movie_id):
         if r.status_code == 200:
             movie = r.json()
             return render_template('tmdb_detail.html', movie=movie, type='movie')
-    except:
-        pass
+    except: pass
     return "Movie not found", 404
 
 @app.route('/tmdb/tv/<int:tv_id>')
@@ -384,23 +490,14 @@ def tmdb_tv_detail(tv_id):
         if r.status_code == 200:
             tv = r.json()
             return render_template('tmdb_detail.html', tv=tv, type='tv')
-    except:
-        pass
+    except: pass
     return "TV show not found", 404
-
-
-# ---------- ADMIN ----------
-@app.route('/admin')
-@login_required
-def admin():
-    return render_template('admin.html')
-
 
 # ---------- API ROUTES ----------
 @app.route('/api/data', methods=['GET'])
 @login_required
 def api_get_data():
-    return jsonify(data.get_all())
+    return jsonify(data._load())
 
 @app.route('/api/news', methods=['POST'])
 @login_required
@@ -426,8 +523,24 @@ def api_reset():
     data.reset_data()
     return jsonify({'status': 'ok'})
 
+# ---------- AUTOCOMPLETE ----------
+@app.route('/api/autocomplete')
+def autocomplete():
+    query = request.args.get('q', '').strip()
+    if not query or len(query) < 2:
+        return jsonify([])
+    movie_results = search_tmdb_movie(query)
+    tv_results = search_tmdb_tv(query)
+    people_results = search_tmdb_person(query)
+    suggestions = []
+    for m in movie_results[:5]:
+        suggestions.append({'label': m['title'], 'year': m.get('release_date', '').split('-')[0] if m.get('release_date') else '', 'type': 'movie', 'id': m['id']})
+    for t in tv_results[:5]:
+        suggestions.append({'label': t['name'], 'year': t.get('first_air_date', '').split('-')[0] if t.get('first_air_date') else '', 'type': 'tv', 'id': t['id']})
+    for p in people_results[:5]:
+        suggestions.append({'label': p['name'], 'year': '', 'type': 'person', 'id': p['id']})
+    return jsonify(suggestions[:12])
 
-# ---------- RUN ----------
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)

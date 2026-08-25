@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Origins{% endblock %}
+
+{% block content %}
+<section class="block" style="padding-top:40px;">
+  <div class="wrap narrow">
+    <div class="block-head">
+      <h2>Edit Origins Page</h2>
+      <a href="{{ url_for('admin_dashboard') }}" class="btn ghost">Dashboard</a>
+    </div>
+    <form method="post" style="background:var(--paper-dim);padding:30px;border-radius:8px;">
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Content (HTML allowed)</label>
+        <textarea name="content" rows="12" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:4px;font-family:inherit;">{{ origins.content or '' }}</textarea>
+      </div>
+      <button type="submit" class="btn primary">Update Origins</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

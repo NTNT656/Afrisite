@@ -6,88 +6,49 @@
 <section class="block" style="padding-top:40px;">
   <div class="wrap">
     <div class="block-head"><h2>{{ title }}</h2></div>
-
-    {% if type != 'news' %}
+    {% if type == 'shows' %}
+      <div class="shows-grid">
+        {% for show in items %}
+          <div class="show-panel {% if loop.index == 2 %}red{% endif %}" style="{% if loop.index == 4 %}background:#1A1512;{% endif %}">
+            <div class="show-eyebrow mono">{{ show.category or 'Show' }}</div>
+            <h3>{{ show.name }}</h3>
+            <p>{{ show.description }}</p>
+            <a class="btn ghost" href="{{ show.youtube_url }}" target="_blank">▶ Watch</a>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
       <div class="grid cols-3">
         {% for item in items %}
           <div class="card">
-            <div class="thumb">
-              <span class="tag mono">{{ type|capitalize }}</span>
-              <div class="poster p-news{{ loop.index % 4 + 1 }}"><div class="shape"></div><div class="grain"></div><div class="vig"></div></div>
-              {% if type == 'reviews' %}<div class="score-badge">{{ item.score }}</div>{% endif %}
+            <div class="thumb" style="aspect-ratio:2/3;">
+              {% if item.image_url %}
+                <img src="{{ item.image_url }}" alt="{{ item.title }}" style="width:100%;height:100%;object-fit:cover;">
+              {% else %}
+                <div class="poster p-news{{ loop.index % 4 + 1 }}">
+                  <div class="shape"></div>
+                  <div class="grain"></div>
+                  <div class="vig"></div>
+                </div>
+              {% endif %}
+              {% if type == 'reviews' %}
+                <div class="score-badge">{{ item.score or 'N/A' }}</div>
+              {% endif %}
             </div>
             <div class="meta">
-              <div class="kicker mono">{{ item.tag }}</div>
+              <div class="kicker mono">{{ item.genre or item.category or 'Article' }}</div>
               <h3>{{ item.title }}</h3>
-              {% if item.blurb %}<p>{{ item.blurb }}</p>{% endif %}
-              {% if item.meta %}<div class="foot-meta"><span>{{ item.meta }}</span></div>{% endif %}
+              {% if item.author %}
+                <p style="font-size:12px;color:var(--ink-soft);">by {{ item.author }}</p>
+              {% endif %}
+              {% if item.body %}<p>{{ item.body|truncate(100) }}</p>{% endif %}
+              {% if item.description %}<p>{{ item.description|truncate(100) }}</p>{% endif %}
+              <div class="foot-meta"><span>{{ item.created_at|string|truncate(10) if item.created_at else '' }}</span></div>
             </div>
           </div>
         {% endfor %}
       </div>
     {% endif %}
-
-    <!-- ========== EXTERNAL NEWS ========== -->
-    <div style="margin-top:{% if type == 'news' %}0{% else %}60px{% endif %};">
-      <div class="block-head" style="border-bottom-color:var(--red);">
-        <h2>Latest News Feed</h2>
-        <form method="get" action="{{ url_for('news_page') }}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-          <input type="text" name="q" placeholder="Search news..." value="{{ external_query }}" style="padding:8px 12px;border:1px solid var(--ink-soft);border-radius:4px;font-size:14px;background:#fff;width:200px;" />
-          <button type="submit" class="btn primary" style="padding:8px 16px;font-size:12px;">Search</button>
-          {% if external_query %}
-            <a href="{{ url_for('news_page') }}" class="btn ghost" style="padding:8px 16px;font-size:12px;">Clear</a>
-          {% endif %}
-        </form>
-      </div>
-
-      {% if not has_api_key %}
-        <div style="background:var(--red);color:#fff;padding:20px;border-radius:8px;text-align:center;">
-          <strong>⚠️ NEWSAPI_KEY missing.</strong> Add <code>NEWSAPI_KEY</code> to your <code>.env</code> file.
-        </div>
-      {% elif external_news is defined and external_news %}
-        {% if external_news is mapping and external_news.error %}
-          <div style="background:var(--red);color:#fff;padding:20px;border-radius:8px;text-align:center;">
-            <strong>⚠️ NewsAPI Error:</strong> {{ external_news.error }}
-          </div>
-        {% elif external_news is iterable and external_news|length > 0 %}
-          <p style="color:var(--ink-soft);margin-bottom:16px;">
-            Showing {{ external_news|length }} external articles
-            {% if external_query %}for "{{ external_query }}"{% else %}from the latest news{% endif %}
-          </p>
-          <div class="grid cols-3">
-            {% for article in external_news %}
-              <div class="card">
-                <div class="thumb" style="aspect-ratio:16/9;background:var(--ink-soft);">
-                  {% if article.image %}
-                    <img src="{{ article.image }}" alt="{{ article.title }}" style="width:100%;height:100%;object-fit:cover;" />
-                  {% else %}
-                    <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--paper);font-family:'Anton',sans-serif;font-size:14px;text-align:center;padding:10px;background:var(--ink);">
-                      {{ article.source|replace('www.','')|replace('.com','')|replace('.org','') if article.source else 'News' }}
-                    </div>
-                  {% endif %}
-                </div>
-                <div class="meta">
-                  <div class="kicker mono">
-                    {{ article.source|replace('www.','')|replace('.com','')|replace('.org','') if article.source else 'News' }}
-                    · {{ article.published_at|string|truncate(10) if article.published_at else 'N/A' }}
-                  </div>
-                  <h3><a href="{{ article.url }}" target="_blank" style="color:var(--red);">{{ article.title }}</a></h3>
-                  <p>{{ article.description or 'No description available.' }}</p>
-                  <div class="foot-meta">
-                    <span>&nbsp;</span>
-                    <span><a href="{{ article.url }}" target="_blank" style="color:var(--red);">Read more →</a></span>
-                  </div>
-                </div>
-              </div>
-            {% endfor %}
-          </div>
-        {% else %}
-          <div style="background:var(--paper-dim);padding:20px;border-radius:8px;text-align:center;color:var(--ink-soft);">
-            <p>No external news articles available right now.</p>
-          </div>
-        {% endif %}
-      {% endif %}
-    </div>
   </div>
 </section>
 {% endblock %}
