@@ -456,6 +456,15 @@ def origins():
     origins_data = data.get_origins()
     return render_template('page.html', title="Origins", desc=origins_data.get('content', ''), is_origins=True)
 
+# ---------- COOKIE & PRIVACY POLICIES ----------
+@app.route('/cookie-policy')
+def cookie_policy():
+    return render_template('cookie_policy.html')
+
+@app.route('/privacy-policy')
+def privacy_policy():
+    return render_template('privacy_policy.html')
+
 # ---------- TMDB DETAIL ROUTES ----------
 @app.route('/tmdb/person/<int:person_id>')
 def tmdb_person_detail(person_id):

@@ -118,4 +118,39 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // ================================================================
+    // COOKIE CONSENT
+    // ================================================================
+    (function() {
+        var consentBanner = document.getElementById('cookieConsent');
+        var acceptBtn = document.getElementById('cookieAccept');
+        var declineBtn = document.getElementById('cookieDecline');
+
+        function setCookieConsent(accepted) {
+            var expiry = new Date();
+            expiry.setFullYear(expiry.getFullYear() + 1);
+            document.cookie = 'cookie_consent=' + (accepted ? 'accepted' : 'declined') + '; expires=' + expiry.toUTCString() + '; path=/';
+            consentBanner.style.display = 'none';
+        }
+
+        function checkCookieConsent() {
+            var match = document.cookie.match(/cookie_consent=([^;]+)/);
+            if (match) {
+                consentBanner.style.display = 'none';
+                return;
+            }
+            consentBanner.style.display = 'flex';
+        }
+
+        if (consentBanner && acceptBtn && declineBtn) {
+            acceptBtn.addEventListener('click', function() {
+                setCookieConsent(true);
+            });
+            declineBtn.addEventListener('click', function() {
+                setCookieConsent(false);
+            });
+            checkCookieConsent();
+        }
+    })();
+
 });

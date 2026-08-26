@@ -1317,3 +1317,27 @@ footer.site {
     outline: 2px solid var(--gold);
     outline-offset: 2px;
 }
+
+
+/* ============ COOKIE CONSENT BANNER ============ */
+
+#cookieConsent {
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+}
+
+#cookieConsent .btn.primary {
+    background: var(--red);
+}
+
+#cookieConsent .btn.primary:hover {
+    background: var(--red-deep);
+}
+
+#cookieConsent .btn.ghost {
+    border-color: var(--paper);
+    color: var(--paper);
+}
+
+#cookieConsent .btn.ghost:hover {
+    background: rgba(255, 255, 255, 0.1);
+}

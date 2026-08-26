@@ -4,6 +4,57 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>{% block title %}African Frame{% endblock %}</title>
+
+<!-- SEO Meta -->
+<meta name="description" content="African Frame – Movies. Series. Every Angle. In-depth reviews, news, features, and community for film and TV lovers.">
+<meta name="keywords" content="movies, series, reviews, African cinema, film analysis, box office, streaming, entertainment">
+<meta name="robots" content="index, follow">
+
+<!-- Open Graph -->
+<meta property="og:title" content="African Frame – Movies. Series. Every Angle.">
+<meta property="og:description" content="In-depth reviews, news, features, and community for film and TV lovers.">
+<meta property="og:image" content="{{ url_for('static', filename='images/og-image.jpg') if url_for else 'https://africanframe.com/static/images/og-image.jpg' }}">
+<meta property="og:url" content="{{ request.url }}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="African Frame">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="African Frame – Movies. Series. Every Angle.">
+<meta name="twitter:description" content="In-depth reviews, news, features, and community for film and TV lovers.">
+<meta name="twitter:image" content="{{ url_for('static', filename='images/og-image.jpg') if url_for else 'https://africanframe.com/static/images/og-image.jpg' }}">
+
+<!-- JSON-LD Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "African Frame",
+  "url": "https://africanframe.com",
+  "logo": "{{ url_for('static', filename='images/1001696672.jpg') }}",
+  "sameAs": [
+    "https://youtube.com/@africanframefilmchannel",
+    "https://youtube.com/@cinemasoda_sa",
+    "https://youtube.com/@seriesntonnton",
+    "https://youtube.com/@africanframeplus"
+  ],
+  "description": "African Frame is a platform for in-depth movie and series reviews, news, features, and community discussions."
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "African Frame",
+  "url": "https://africanframe.com",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://africanframe.com/streaming?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
@@ -64,7 +115,7 @@
       </div>
     </nav>
 
-    <!-- UTILITY – admin link hidden from public -->
+    <!-- UTILITY -->
     <div class="nav-utility">
       {% if session.logged_in %}
         <a href="{{ url_for('logout') }}" class="subscribe" style="background:var(--red-deep);">Logout</a>
@@ -73,7 +124,7 @@
     </div>
   </div>
 
-  <!-- MOBILE NAV – admin link hidden from public -->
+  <!-- MOBILE NAV -->
   <div class="mobile-nav" id="mobileNav">
     <div class="mobile-dropdown-label">Movies &amp; Series</div>
     <a href="{{ url_for('news_page') }}">News</a>
@@ -115,7 +166,23 @@
 </main>
 
 <!-- ============================================================ -->
-<!-- FOOTER – admin link hidden from public -->
+<!-- COOKIE CONSENT BANNER -->
+<!-- ============================================================ -->
+<div id="cookieConsent" style="position:fixed;bottom:0;left:0;right:0;background:var(--ink);color:var(--paper);padding:16px 20px;z-index:999;display:none;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;border-top:3px solid var(--red);">
+  <div style="font-size:13px;line-height:1.5;">
+    We use cookies to improve your experience. By continuing to browse, you agree to our
+    <a href="{{ url_for('cookie_policy') }}" style="color:var(--gold);text-decoration:underline;">Cookie Policy</a>
+    and
+    <a href="{{ url_for('privacy_policy') }}" style="color:var(--gold);text-decoration:underline;">Privacy Policy</a>.
+  </div>
+  <div style="display:flex;gap:10px;flex-shrink:0;">
+    <button id="cookieAccept" class="btn primary" style="font-size:12px;padding:8px 16px;">Accept</button>
+    <button id="cookieDecline" class="btn ghost" style="font-size:12px;padding:8px 16px;border-color:var(--paper);color:var(--paper);">Decline</button>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- FOOTER -->
 <!-- ============================================================ -->
 <footer class="site">
   <div class="wrap foot-grid">
@@ -141,17 +208,21 @@
       <ul>
         <li><a href="{{ url_for('shop') }}" style="color:var(--gold);">Shop</a></li>
         <li><a href="{{ url_for('origins') }}" style="color:var(--red);">Origins</a></li>
-        {# Only show admin link if logged in #}
         {% if session.logged_in %}
           <li><a href="{{ url_for('admin_dashboard') }}" style="color:var(--red);">Admin</a></li>
           <li><a href="{{ url_for('logout') }}" style="color:var(--red);">Logout</a></li>
         {% endif %}
+        <li><a href="{{ url_for('cookie_policy') }}" style="color:var(--paper-dim);">Cookie Policy</a></li>
+        <li><a href="{{ url_for('privacy_policy') }}" style="color:var(--paper-dim);">Privacy Policy</a></li>
       </ul>
     </div>
   </div>
   <div class="wrap foot-bottom">
     <span>© AFRICAN FRAME — A MZANSI NERDS MEDIA PLATFORM</span>
-    <span>SHOP — COMING WITH MERCH</span>
+    <span>
+      <a href="{{ url_for('cookie_policy') }}" style="color:var(--paper-dim);margin-right:16px;">Cookie Policy</a>
+      <a href="{{ url_for('privacy_policy') }}" style="color:var(--paper-dim);">Privacy Policy</a>
+    </span>
   </div>
 </footer>
 
