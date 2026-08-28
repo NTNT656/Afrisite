@@ -421,7 +421,26 @@ def people():
     return render_template('page.html', title="People", desc="Search for actors, directors, and other film industry professionals.",
                            query=query, results=results, is_people_search=True, show_search=True)
 
-# Static pages
+# ---------- REVIEW DETAIL & COMMENTS ----------
+@app.route('/review/<review_id>')
+def review_detail(review_id):
+    """Show a single review with its comments."""
+    review = data.get_item('reviews', review_id)
+    if not review:
+        return "Review not found", 404
+    comments = data.get_comments(review_id)
+    return render_template('review_detail.html', review=review, comments=comments)
+
+@app.route('/review/<review_id>/comment', methods=['POST'])
+def add_review_comment(review_id):
+    """Handle comment submission and redirect back to the review page."""
+    name = request.form.get('name', '').strip()
+    comment = request.form.get('comment', '').strip()
+    if comment:  # require at least a comment
+        data.add_comment(review_id, name, comment)
+    return redirect(url_for('review_detail', review_id=review_id))
+
+# ---------- OTHER STATIC PAGES ----------
 @app.route('/awards')
 def awards():
     items = data.get_awards()

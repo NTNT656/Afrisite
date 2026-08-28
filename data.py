@@ -162,3 +162,32 @@ def get_content_by_person(person_id):
                     'date': item.get('created_at')
                 })
     return sorted(results, key=lambda x: x.get('date', ''), reverse=True)
+
+# ---- Comments for reviews ----
+def get_comments(review_id):
+    """Fetch all comments for a given review, newest first."""
+    try:
+        response = supabase.table('review_comments') \
+            .select('*') \
+            .eq('review_id', review_id) \
+            .order('created_at', desc=True) \
+            .execute()
+        return response.data if response.data else []
+    except Exception as e:
+        print(f"Error fetching comments: {e}")
+        return []
+
+def add_comment(review_id, name, comment):
+    """Insert a new comment for a review."""
+    try:
+        data = {
+            'review_id': review_id,
+            'name': name.strip() or 'Anonymous',
+            'comment': comment.strip(),
+            'created_at': datetime.now().isoformat()
+        }
+        response = supabase.table('review_comments').insert(data).execute()
+        return response.data[0] if response.data else None
+    except Exception as e:
+        print(f"Error adding comment: {e}")
+        return None

@@ -1341,3 +1341,41 @@ footer.site {
 #cookieConsent .btn.ghost:hover {
     background: rgba(255, 255, 255, 0.1);
 }
+
+
+/* Review comments */
+
+.comment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.comment-item {
+    background: #fff;
+    padding: 14px 18px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+}
+
+.comment-item .comment-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    margin-bottom: 4px;
+}
+
+.comment-item .comment-meta strong {
+    color: var(--ink);
+}
+
+.comment-item .comment-meta .date {
+    color: var(--ink-soft);
+    font-size: 11px;
+}
+
+.comment-item p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--ink-soft);
+}
